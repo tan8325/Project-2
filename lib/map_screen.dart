@@ -99,6 +99,7 @@ class _MapScreenState extends State<MapScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: const Color(0xFFF4F4F4),
         title: const Text('Weather Radar'),
         centerTitle: true,
         actions: [

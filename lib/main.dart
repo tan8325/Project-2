@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'home_screen.dart';
 import 'map_screen.dart';
 import 'settings_screen.dart';
 
 void main() {
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+      statusBarBrightness: Brightness.light,
+    ),
+  );
   runApp(const MyApp());
 }
 
@@ -32,10 +40,11 @@ class MainApp extends StatefulWidget {
 
 class _MainAppState extends State<MainApp> {
   int _selectedIndex = 0;
-  final List<Widget> _screens = [
-    const HomeScreen(),
-    const MapScreen(),
-    const SettingsScreen(),
+
+  final _screens = const [
+    HomeScreen(),
+    MapScreen(),
+    SettingsScreen(),
   ];
 
   @override
@@ -43,20 +52,17 @@ class _MainAppState extends State<MainApp> {
     return Scaffold(
       body: _screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.map_rounded), label: ''),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings_rounded),
-            label: '',
-          ),
-        ],
+        backgroundColor: const Color(0xFFF4F4F4),
+        type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
+        selectedFontSize: 0,
+        unselectedFontSize: 0,
+        onTap: (index) => setState(() => _selectedIndex = index),
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home_filled, size: 30), label: ''),
+          BottomNavigationBarItem(icon: Icon(Icons.location_on_rounded, size: 30), label: ''),
+          BottomNavigationBarItem(icon: Icon(Icons.notifications_rounded, size: 30), label: ''),
+        ],
       ),
     );
   }

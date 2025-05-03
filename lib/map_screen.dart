@@ -3,22 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
-
-class WeatherAlert {
-  final String message;
-  final LatLng location;
-  final DateTime timestamp;
-  final String type;
-  final String username;
-
-  WeatherAlert({
-    required this.message,
-    required this.location,
-    required this.timestamp,
-    required this.type,
-    required this.username,
-  });
-}
+import 'models/weather_alert.dart';
+import 'services/firebase_service.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -44,6 +30,8 @@ class _MapScreenState extends State<MapScreen> {
   bool _showReportPanel = false;
   WeatherAlert? _selectedAlert;
   bool _showLocationCursor = false;
+  bool _isLoadingReports = true;
+  final FirebaseService _firebaseService = FirebaseService();
 
   final List<Map<String, dynamic>> weatherTypes = [
     {'type': 'rain', 'icon': Icons.water_drop, 'color': Colors.blue},
@@ -58,28 +46,28 @@ class _MapScreenState extends State<MapScreen> {
   void initState() {
     super.initState();
     loadRadarData();
-    alerts = [
-      WeatherAlert(
-        message: "Heavy rain in downtown",
-        location: LatLng(33.7490, -84.3880),
-        timestamp: DateTime.now().subtract(const Duration(minutes: 15)),
-        type: 'rain',
-        username: 'WeatherWatcher',
-      ),
-      WeatherAlert(
-        message: "Foggy conditions, low visibility",
-        location: LatLng(33.8490, -84.2880),
-        timestamp: DateTime.now().subtract(const Duration(minutes: 25)),
-        type: 'fog',
-        username: 'CommuteCaptain',
-      ),
-    ];
+    loadWeatherReports();
   }
 
   @override
   void dispose() {
     _messageController.dispose();
     super.dispose();
+  }
+
+  void loadWeatherReports() {
+    setState(() => _isLoadingReports = true);
+    
+    // Subscribe to the stream of weather reports
+    _firebaseService.getWeatherReports().listen((reportsList) {
+      setState(() {
+        alerts = reportsList;
+        _isLoadingReports = false;
+      });
+    }, onError: (error) {
+      print('Error loading weather reports: $error');
+      setState(() => _isLoadingReports = false);
+    });
   }
 
   Future<void> loadRadarData() async {
@@ -129,30 +117,70 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  void _addWeatherAlert() {
+  Future<void> _addWeatherAlert() async {
     if (_messageController.text.trim().isEmpty) return;
+
+    setState(() => _isLoadingReports = true);
 
     final newAlert = WeatherAlert(
       message: _messageController.text.trim(),
       location: _mapController.camera.center,
       timestamp: DateTime.now(),
       type: _selectedWeatherType,
-      username: 'CurrentUser',
+      username: 'CurrentUser', // In a real app, this would be the user's username
     );
 
-    setState(() {
-      alerts.add(newAlert);
-      _showReportPanel = false;
-      _showLocationCursor = false;
-      _messageController.clear();
-    });
+    try {
+      await _firebaseService.addWeatherReport(newAlert);
+      
+      setState(() {
+        _showReportPanel = false;
+        _showLocationCursor = false;
+        _messageController.clear();
+      });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Weather report submitted. Thank you!'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Weather report submitted. Thank you!'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error submitting report: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } finally {
+      setState(() => _isLoadingReports = false);
+    }
+  }
+
+  Future<void> _deleteWeatherAlert(String reportId) async {
+    try {
+      setState(() => _isLoadingReports = true);
+      await _firebaseService.deleteWeatherReport(reportId);
+      _closeAlertDetails();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Weather report deleted successfully'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error deleting report: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } finally {
+      setState(() => _isLoadingReports = false);
+    }
   }
 
   String _getTimeAgo(DateTime timestamp) {
@@ -205,7 +233,10 @@ class _MapScreenState extends State<MapScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Refresh Radar',
-            onPressed: loadRadarData,
+            onPressed: () {
+              loadRadarData();
+              loadWeatherReports();
+            },
           ),
         ],
       ),
@@ -312,8 +343,13 @@ class _MapScreenState extends State<MapScreen> {
                 ],
               ),
             ),
-          if (isLoading)
-            const Center(child: CircularProgressIndicator()),
+          if (isLoading || _isLoadingReports)
+            Container(
+              color: Colors.black.withOpacity(0.3),
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
           Positioned(
             right: 16,
             bottom: 100,
@@ -587,6 +623,23 @@ class _MapScreenState extends State<MapScreen> {
                         color: Colors.grey[600],
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    if (_selectedAlert!.id != null)
+                      SizedBox(
+                        width: double.infinity,
+                        child: TextButton.icon(
+                          icon: const Icon(Icons.delete_outline, color: Colors.red),
+                          label: const Text('Delete Report', style: TextStyle(color: Colors.red)),
+                          onPressed: () => _deleteWeatherAlert(_selectedAlert!.id!),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              side: const BorderSide(color: Colors.red, width: 1),
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),

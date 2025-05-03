@@ -38,6 +38,20 @@ class MyApp extends StatelessWidget {
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: themeNotifier,
       builder: (context, currentMode, _) {
+        SystemChrome.setSystemUIOverlayStyle(
+          currentMode == ThemeMode.dark
+              ? const SystemUiOverlayStyle(
+                  statusBarColor: Colors.transparent,
+                  statusBarIconBrightness: Brightness.light, // Light icons for dark theme
+                  statusBarBrightness: Brightness.dark, // Dark status bar background
+                )
+              : const SystemUiOverlayStyle(
+                  statusBarColor: Colors.transparent,
+                  statusBarIconBrightness: Brightness.dark, // Dark icons for light theme
+                  statusBarBrightness: Brightness.light, // Light status bar background
+                ),
+        );
+
         return MaterialApp(
           title: 'Weatherly',
           debugShowCheckedModeBanner: false,
@@ -74,6 +88,7 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
 
 class MainApp extends StatefulWidget {
   const MainApp({super.key});

@@ -121,7 +121,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Override default scaffold background when dark mode is on
-    final bgColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF4F4F4);
+    final bgColor = isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF4F4F4);
     final cardColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
     final borderColor = isDark ? Colors.grey[700]! : Colors.grey[400]!;
     final textColor = isDark ? Colors.white : Colors.black87;
@@ -238,7 +238,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildNotificationToggle(Color textColor) {
     return SwitchListTile(
       contentPadding: EdgeInsets.zero,
-      title: Text("Notifications", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor)),
+      title: Text("NOTIFICATIONS", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor)),
       value: _notificationsEnabled,
       activeColor: Colors.grey.shade800,
       onChanged: (val) {

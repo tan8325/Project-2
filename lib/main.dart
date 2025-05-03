@@ -11,21 +11,16 @@ ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   final prefs = await SharedPreferences.getInstance();
-  final isDark = prefs.getBool('isDarkTheme') ?? false;
-  themeNotifier.value = isDark ? ThemeMode.dark : ThemeMode.light;
+  themeNotifier.value = prefs.getBool('isDarkTheme') ?? false ? ThemeMode.dark : ThemeMode.light;
 
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-      statusBarBrightness: Brightness.light,
-    ),
-  );
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark,
+    statusBarBrightness: Brightness.light,
+  ));
 
   runApp(const MyApp());
 }
@@ -42,53 +37,60 @@ class MyApp extends StatelessWidget {
           currentMode == ThemeMode.dark
               ? const SystemUiOverlayStyle(
                   statusBarColor: Colors.transparent,
-                  statusBarIconBrightness: Brightness.light, // Light icons for dark theme
-                  statusBarBrightness: Brightness.dark, // Dark status bar background
+                  statusBarIconBrightness: Brightness.light,
+                  statusBarBrightness: Brightness.dark,
                 )
               : const SystemUiOverlayStyle(
                   statusBarColor: Colors.transparent,
-                  statusBarIconBrightness: Brightness.dark, // Dark icons for light theme
-                  statusBarBrightness: Brightness.light, // Light status bar background
+                  statusBarIconBrightness: Brightness.dark,
+                  statusBarBrightness: Brightness.light,
                 ),
         );
 
         return MaterialApp(
           title: 'Weatherly',
           debugShowCheckedModeBanner: false,
-          theme: ThemeData.light().copyWith(
-            scaffoldBackgroundColor: const Color(0xFFF4F4F4),
-            appBarTheme: const AppBarTheme(
-              backgroundColor: Color(0xFFF4F4F4),
-              foregroundColor: Colors.black,
-              elevation: 0,
-            ),
-            bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-              backgroundColor: Color(0xFFF4F4F4),
-              selectedItemColor: Colors.black,
-              unselectedItemColor: Colors.grey,
-            ),
-          ),
-          darkTheme: ThemeData.dark().copyWith(
-            scaffoldBackgroundColor: const Color(0xFF121212),
-            appBarTheme: const AppBarTheme(
-              backgroundColor: Color(0xFF1E1E1E),
-              foregroundColor: Colors.white,
-              elevation: 0,
-            ),
-            bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-              backgroundColor: Color(0xFF1E1E1E),
-              selectedItemColor: Colors.white,
-              unselectedItemColor: Colors.grey,
-            ),
-          ),
+          theme: _buildLightTheme(),
+          darkTheme: _buildDarkTheme(),
           themeMode: currentMode,
           home: const MainApp(),
         );
       },
     );
   }
-}
 
+  ThemeData _buildLightTheme() {
+    return ThemeData.light().copyWith(
+      scaffoldBackgroundColor: const Color(0xFFF4F4F4),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Color(0xFFF4F4F4),
+        foregroundColor: Colors.black,
+        elevation: 0,
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: Color(0xFFF4F4F4),
+        selectedItemColor: Colors.black,
+        unselectedItemColor: Colors.grey,
+      ),
+    );
+  }
+
+  ThemeData _buildDarkTheme() {
+    return ThemeData.dark().copyWith(
+      scaffoldBackgroundColor: const Color(0xFF121212),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Color(0xFF1E1E1E),
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: Color(0xFF1E1E1E),
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.grey,
+      ),
+    );
+  }
+}
 
 class MainApp extends StatefulWidget {
   const MainApp({super.key});
@@ -100,11 +102,11 @@ class MainApp extends StatefulWidget {
 class _MainAppState extends State<MainApp> {
   int _selectedIndex = 0;
 
- final _screens = [
-  HomeScreen(),
-  MapScreen(),
-  SettingsScreen(),
-];
+  final _screens = [
+    HomeScreen(),
+    MapScreen(),
+    SettingsScreen(),
+  ];
 
   @override
   Widget build(BuildContext context) {

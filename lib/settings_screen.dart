@@ -17,7 +17,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _snowAlert = true;
   bool _tempAlert = true;
   bool _darkTheme = false;
-  bool _notificationsEnabled = true; // Added for notification toggle
+  bool _notificationsEnabled = true; 
   String? _activeAlertMessage;
 
   @override
@@ -34,7 +34,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _rainAlert = prefs.getBool('rainAlert') ?? true;
       _snowAlert = prefs.getBool('snowAlert') ?? true;
       _tempAlert = prefs.getBool('tempAlert') ?? true;
-      _notificationsEnabled = prefs.getBool('notificationsEnabled') ?? true; // Load notification preference
+      _notificationsEnabled = prefs.getBool('notificationsEnabled') ?? true;
     });
     themeNotifier.value = _darkTheme ? ThemeMode.dark : ThemeMode.light;
   }
@@ -51,16 +51,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await prefs.setBool(key, value);
   }
 
-  // Added method for updating notifications toggle preference
   Future<void> _updateNotificationPref(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('notificationsEnabled', value);
   }
 
   Future<void> _fetchWeatherAlert() async {
-    final apiKey = '4631382a3fedac89d601b33a9658b30e';
-    final lat = 33.7490;
-    final lon = -84.3880;
+    const apiKey = '4631382a3fedac89d601b33a9658b30e';
+    const lat = 33.7490;
+    const lon = -84.3880;
 
     final url = Uri.parse(
       'https://api.openweathermap.org/data/3.0/onecall?lat=$lat&lon=$lon&exclude=minutely,hourly,daily&appid=$apiKey',
@@ -71,7 +70,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final current = data['current'];
-
         String? alert;
 
         final weatherMain = current['weather']?[0]['main'];
@@ -119,8 +117,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    // Override default scaffold background when dark mode is on
     final bgColor = isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF4F4F4);
     final cardColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
     final borderColor = isDark ? Colors.grey[700]! : Colors.grey[400]!;
@@ -155,7 +151,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 12),
             Divider(thickness: 1, color: borderColor),
             const SizedBox(height: 12),
-            _buildNotificationToggle(textColor), // Notification toggle here
+            _buildNotificationToggle(textColor), 
             const SizedBox(height: 18),
             _buildUploadButton(borderColor, textColor),
             const SizedBox(height: 30),
@@ -234,7 +230,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // This widget is just the notification toggle switch
   Widget _buildNotificationToggle(Color textColor) {
     return SwitchListTile(
       contentPadding: EdgeInsets.zero,

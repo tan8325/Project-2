@@ -1,16 +1,14 @@
-# project_2
+# Weatherly App
 
-A new Flutter project.
+Weatherly is a fun and easy-to-use weather app that gives you accurate forecasts, custom alerts, and live
+maps. You can personalize it with different themes or your own backgrounds, get notified about rain or
+extreme temps, and even share weather updates with friends.
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+1. Clone the repo
+- git clone https://github.com/tan8325/Project-2.git
+2. Install dependencies
+- flutter pub get
+3. Run a virtual android device
+- flutter run

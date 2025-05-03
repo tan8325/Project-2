@@ -12,28 +12,16 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
-  // Default to Atlanta, GA coordinates
   final double defaultLatitude = 33.7490;
   final double defaultLongitude = -84.3880;
   final double defaultZoom = 7;
   
-  // Direct static URL to RainViewer latest radar data
   String radarUrl = '';
   bool isLoading = true;
-  String debugMessage = "";
-  
-  // Map type toggle
   bool isSatelliteView = false;
-  
-  // Color schemes available in RainViewer
-  // 1: Original
-  // 2: Universal Blue
-  // 3: TITAN
-  // 4: The Weather Channel
-  // 5: NEXRAD Level-3
-  // 6: Rainbow @ SELEX-SI
-  // 7: Dark Sky
-  final int colorScheme = 2; // Using Universal Blue for better visibility
+  final int colorScheme = 2;
+  String lastUpdated = '';
+  final MapController _mapController = MapController();
 
   @override
   void initState() {
@@ -45,10 +33,8 @@ class _MapScreenState extends State<MapScreen> {
     try {
       setState(() {
         isLoading = true;
-        debugMessage = "Loading radar data...";
       });
       
-      // Fetch the latest radar data information from RainViewer API
       final response = await http.get(
         Uri.parse('https://api.rainviewer.com/public/weather-maps.json'),
       );
@@ -56,7 +42,6 @@ class _MapScreenState extends State<MapScreen> {
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
         
-        // Extract required data for constructing the URL
         if (data.containsKey('host') && 
             data.containsKey('radar') && 
             data['radar'] is Map &&
@@ -64,47 +49,48 @@ class _MapScreenState extends State<MapScreen> {
             data['radar']['past'] is List &&
             data['radar']['past'].isNotEmpty) {
           
-          // Get the latest radar frame from the past data
           final latestFrame = data['radar']['past'].last;
           
           if (latestFrame != null && 
               latestFrame.containsKey('path') && 
-              latestFrame['path'] != null) {
+              latestFrame['path'] != null &&
+              latestFrame.containsKey('time')) {
             
             final String host = data['host'];
             final String path = latestFrame['path'];
+            final int timestamp = latestFrame['time'];
             
-            // Format the complete URL - Using the standard tile format instead of lat/lon
-            // Format: {host}{path}/256/{z}/{x}/{y}/{colorScheme}/1_1.png
-            // where 1_1 means: smoothed (1) with snow display (1)
             radarUrl = '$host$path/256/{z}/{x}/{y}/$colorScheme/1_1.png';
+            
+            final DateTime radarTime = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
+            
+            // Convert to 12-hour format with AM/PM
+            final int hour = radarTime.hour;
+            final String period = hour >= 12 ? 'PM' : 'AM';
+            final int hour12 = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+            lastUpdated = '${radarTime.month}/${radarTime.day}/${radarTime.year} $hour12:${radarTime.minute.toString().padLeft(2, '0')} $period';
             
             setState(() {
               isLoading = false;
-              debugMessage = "Radar loaded successfully";
             });
           } else {
             setState(() {
               isLoading = false;
-              debugMessage = "Invalid frame data in API response";
             });
           }
         } else {
           setState(() {
             isLoading = false;
-            debugMessage = "Invalid API response format or no radar data available";
           });
         }
       } else {
         setState(() {
           isLoading = false;
-          debugMessage = "API Error: ${response.statusCode}";
         });
       }
     } catch (e) {
       setState(() {
         isLoading = false;
-        debugMessage = "Error: $e";
       });
     }
   }
@@ -116,7 +102,6 @@ class _MapScreenState extends State<MapScreen> {
         title: const Text('Weather Radar'),
         centerTitle: true,
         actions: [
-          // Map type toggle button
           IconButton(
             icon: Icon(isSatelliteView ? Icons.map : Icons.satellite_alt),
             tooltip: isSatelliteView ? 'Switch to Map View' : 'Switch to Satellite View',
@@ -126,7 +111,6 @@ class _MapScreenState extends State<MapScreen> {
               });
             },
           ),
-          // Refresh button
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Refresh Radar',
@@ -137,6 +121,7 @@ class _MapScreenState extends State<MapScreen> {
       body: Stack(
         children: [
           FlutterMap(
+            mapController: _mapController,
             options: MapOptions(
               initialCenter: LatLng(defaultLatitude, defaultLongitude),
               initialZoom: defaultZoom,
@@ -146,19 +131,16 @@ class _MapScreenState extends State<MapScreen> {
               ),
             ),
             children: [
-              // Base map layer (OpenStreetMap or Satellite)
               TileLayer(
                 urlTemplate: isSatelliteView 
-                  // Use Esri World Imagery for satellite view
                   ? 'https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
                   : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.example.app',
                 tileProvider: NetworkTileProvider(),
               ),
-              // RainViewer radar layer
               if (!isLoading && radarUrl.isNotEmpty)
                 Opacity(
-                  opacity: 0.8, // Slightly higher opacity for better visibility
+                  opacity: 0.8,
                   child: TileLayer(
                     urlTemplate: radarUrl,
                     userAgentPackageName: 'com.example.app',
@@ -172,29 +154,47 @@ class _MapScreenState extends State<MapScreen> {
             const Center(
               child: CircularProgressIndicator(),
             ),
-          // Error display if needed
-          if (!isLoading && radarUrl.isEmpty)
-            Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.cloud_off, size: 64, color: Colors.grey),
-                  const SizedBox(height: 16),
-                  const Text(
-                    "No radar data available",
-                    style: TextStyle(fontSize: 18),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    debugMessage,
-                    style: const TextStyle(fontSize: 14, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: loadRadarData,
-                    child: const Text("Try Again"),
-                  ),
-                ],
+          Positioned(
+            right: 16,
+            bottom: 100,
+            child: Column(
+              children: [
+                FloatingActionButton(
+                  heroTag: "zoom_in",
+                  mini: true,
+                  child: const Icon(Icons.add),
+                  onPressed: () {
+                    final currentZoom = _mapController.camera.zoom;
+                    _mapController.move(_mapController.camera.center, currentZoom + 1);
+                  },
+                ),
+                const SizedBox(height: 8),
+                FloatingActionButton(
+                  heroTag: "zoom_out",
+                  mini: true,
+                  child: const Icon(Icons.remove),
+                  onPressed: () {
+                    final currentZoom = _mapController.camera.zoom;
+                    _mapController.move(_mapController.camera.center, currentZoom - 1);
+                  },
+                ),
+              ],
+            ),
+          ),
+          if (!isLoading && lastUpdated.isNotEmpty)
+            Positioned(
+              left: 16,
+              bottom: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.6),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  'Radar data: $lastUpdated',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
               ),
             ),
         ],

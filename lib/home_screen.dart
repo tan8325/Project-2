@@ -114,25 +114,28 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Map<String, dynamic> getWeatherIcon(String? condition) {
-    if (condition == null) {
-      return {'icon': Icons.cloud, 'color': Colors.grey[700]};
-    }
-
-    condition = condition.toLowerCase();
-    if (condition.contains('rain')) {
-      return {'icon': Icons.cloudy_snowing, 'color': Colors.blueGrey};
-    } else if (condition.contains('cloud')) {
-      return {'icon': Icons.cloud_rounded, 'color': Colors.grey[700]};
-    } else if (condition.contains('clear') || condition.contains('sunny')) {
-      return {'icon': Icons.wb_sunny_rounded, 'color': Colors.amber};
-    } else if (condition.contains('snow')) {
-      return {'icon': Icons.ac_unit, 'color': Colors.lightBlue};
-    } else if (condition.contains('fog') || condition.contains('mist')) {
-      return {'icon': Icons.foggy, 'color': Colors.grey};
-    } else {
-      return {'icon': Icons.cloud, 'color': Colors.grey[700]};
-    }
+  if (condition == null) {
+    return {'icon': Icons.cloud, 'color': Colors.grey[700]};
   }
+
+  condition = condition.toLowerCase();
+  if (condition.contains('thunder')) {
+    return {'icon': Icons.flash_on, 'color': Colors.blueGrey}; // Thunderstorm icon
+  } else if (condition.contains('rain')) {
+    return {'icon': Icons.cloudy_snowing, 'color': Colors.blueGrey};
+  } else if (condition.contains('cloud')) {
+    return {'icon': Icons.cloud_rounded, 'color': Colors.grey[700]};
+  } else if (condition.contains('clear') || condition.contains('sunny')) {
+    return {'icon': Icons.wb_sunny_rounded, 'color': Colors.amber};
+  } else if (condition.contains('snow')) {
+    return {'icon': Icons.ac_unit, 'color': Colors.lightBlue};
+  } else if (condition.contains('fog') || condition.contains('mist')) {
+    return {'icon': Icons.foggy, 'color': Colors.grey};
+  } else {
+    return {'icon': Icons.cloud, 'color': Colors.grey[700]};
+  }
+}
+
 
   @override
   Widget build(BuildContext context) {

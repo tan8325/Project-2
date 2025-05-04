@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
@@ -16,15 +17,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _rainAlert = true;
   bool _snowAlert = true;
   bool _tempAlert = true;
+  bool _thunderstormAlert = true; // Add Thunderstorm alert
   bool _darkTheme = false;
-  bool _notificationsEnabled = true; 
+  bool _notificationsEnabled = true;
   String? _activeAlertMessage;
+
+  Timer? _alertTimer;  // Declare a timer to periodically fetch weather alerts
 
   @override
   void initState() {
     super.initState();
     _loadPreferences();
-    _fetchWeatherAlert();
+    _fetchWeatherAlert();  // Fetch the initial alert when the screen loads
+    _startAlertTimer();    // Start the periodic timer for updates
+  }
+
+  // Start a timer that calls _fetchWeatherAlert every 15 minutes (or any interval you prefer)
+  void _startAlertTimer() {
+    _alertTimer = Timer.periodic(Duration(minutes: 15), (timer) {
+      _fetchWeatherAlert();  // Fetch the alert every 15 minutes
+    });
+  }
+
+  @override
+  void dispose() {
+    _alertTimer?.cancel();  // Cancel the timer when the widget is disposed
+    super.dispose();
   }
 
   Future<void> _loadPreferences() async {
@@ -34,6 +52,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _rainAlert = prefs.getBool('rainAlert') ?? true;
       _snowAlert = prefs.getBool('snowAlert') ?? true;
       _tempAlert = prefs.getBool('tempAlert') ?? true;
+      _thunderstormAlert = prefs.getBool('thunderstormAlert') ?? true; // Load thunderstorm alert preference
       _notificationsEnabled = prefs.getBool('notificationsEnabled') ?? true;
     });
     themeNotifier.value = _darkTheme ? ThemeMode.dark : ThemeMode.light;
@@ -57,34 +76,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _fetchWeatherAlert() async {
-    const apiKey = '4631382a3fedac89d601b33a9658b30e';
-    const lat = 33.7490;
-    const lon = -84.3880;
+    final apiKey = '4631382a3fedac89d601b33a9658b30e';
+    final lat = 33.7490;  // Latitude for Atlanta
+    final lon = -84.3880; // Longitude for Atlanta
 
-    final url = Uri.parse(
-      'https://api.openweathermap.org/data/3.0/onecall?lat=$lat&lon=$lon&exclude=minutely,hourly,daily&appid=$apiKey',
-    );
-
+    final url = Uri.parse('https://api.openweathermap.org/data/3.0/onecall?lat=$lat&lon=$lon&exclude=minutely,hourly,daily&appid=$apiKey');
+    
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final current = data['current'];
+
         String? alert;
 
         final weatherMain = current['weather']?[0]['main'];
-        final weatherDesc = current['weather']?[0]['description'];
-        final capitalizedDesc = weatherDesc != null
-            ? weatherDesc
-                .split(' ')
-                .map((word) => word[0].toUpperCase() + word.substring(1))
-                .join(' ')
-            : null;
-
         if (_rainAlert && weatherMain == 'Rain') {
-          alert = "Rain Alert: $capitalizedDesc";
+          alert = "Rain Alert: It's currently raining!";
         } else if (_snowAlert && weatherMain == 'Snow') {
-          alert = "Snow Alert: $capitalizedDesc";
+          alert = "Snow Alert: It's currently snowing!";
+        } else if (_thunderstormAlert && weatherMain == 'Thunderstorm') {
+          alert = "Thunderstorm Alert: It's currently thundering!";
         } else if (_tempAlert) {
           final tempKelvin = current['temp'];
           final tempF = (tempKelvin - 273.15) * 9 / 5 + 32;
@@ -97,10 +109,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         }
 
         setState(() {
-          _activeAlertMessage = alert;
+          _activeAlertMessage = alert ?? "No weather alerts at this time";
         });
-      } else {
-        print("API error: ${response.statusCode}");
       }
     } catch (e) {
       print("Failed to fetch alert: $e");
@@ -129,32 +139,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           children: [
             _buildAlertBanner(cardColor, textColor),
-            const SizedBox(height: 28),
-            _buildSectionTitle("ALERTS", textColor),
-            const SizedBox(height: 10),
-            _buildSwitch("Rain", _rainAlert, (val) {
-              setState(() => _rainAlert = val);
-              _updateAlertPref('rainAlert', val);
-            }, textColor),
-            _buildSwitch("Snow", _snowAlert, (val) {
-              setState(() => _snowAlert = val);
-              _updateAlertPref('snowAlert', val);
-            }, textColor),
-            _buildSwitch("Temperature", _tempAlert, (val) {
-              setState(() => _tempAlert = val);
-              _updateAlertPref('tempAlert', val);
-            }, textColor),
-            const SizedBox(height: 8),
-            Divider(thickness: 1, color: borderColor),
-            const SizedBox(height: 12),
+            _buildSwitches(textColor),
             _buildThemeSelector(borderColor, textColor),
-            const SizedBox(height: 12),
-            Divider(thickness: 1, color: borderColor),
-            const SizedBox(height: 12),
-            _buildNotificationToggle(textColor), 
-            const SizedBox(height: 18),
+            _buildNotificationToggle(textColor),
             _buildUploadButton(borderColor, textColor),
-            const SizedBox(height: 30),
           ],
         ),
       ),
@@ -187,10 +175,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title, Color textColor) {
-    return Text(
-      title,
-      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textColor),
+  Widget _buildSwitches(Color textColor) {
+    return Column(
+      children: [
+        _buildSwitch("Rain", _rainAlert, (val) {
+          setState(() => _rainAlert = val);
+          _updateAlertPref('rainAlert', val);
+        }, textColor),
+        _buildSwitch("Snow", _snowAlert, (val) {
+          setState(() => _snowAlert = val);
+          _updateAlertPref('snowAlert', val);
+        }, textColor),
+        _buildSwitch("Temperature", _tempAlert, (val) {
+          setState(() => _tempAlert = val);
+          _updateAlertPref('tempAlert', val);
+        }, textColor),
+        _buildSwitch("Thunderstorm", _thunderstormAlert, (val) {  // Add Thunderstorm alert toggle
+          setState(() => _thunderstormAlert = val);
+          _updateAlertPref('thunderstormAlert', val);
+        }, textColor),
+      ],
     );
   }
 

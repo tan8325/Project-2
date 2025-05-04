@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'main.dart'; // for themeNotifier
+import 'main.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -17,31 +17,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _rainAlert = true;
   bool _snowAlert = true;
   bool _tempAlert = true;
-  bool _thunderstormAlert = true; // Add Thunderstorm alert
+  bool _thunderstormAlert = true;
   bool _darkTheme = false;
   bool _notificationsEnabled = true;
   String? _activeAlertMessage;
-
-  Timer? _alertTimer;  // Declare a timer to periodically fetch weather alerts
+  Timer? _alertTimer;
 
   @override
   void initState() {
     super.initState();
     _loadPreferences();
-    _fetchWeatherAlert();  // Fetch the initial alert when the screen loads
-    _startAlertTimer();    // Start the periodic timer for updates
+    _fetchWeatherAlert();
+    _startAlertTimer(); 
   }
 
-  // Start a timer that calls _fetchWeatherAlert every 15 minutes (or any interval you prefer)
   void _startAlertTimer() {
     _alertTimer = Timer.periodic(Duration(minutes: 15), (timer) {
-      _fetchWeatherAlert();  // Fetch the alert every 15 minutes
+      _fetchWeatherAlert();
     });
   }
 
   @override
   void dispose() {
-    _alertTimer?.cancel();  // Cancel the timer when the widget is disposed
+    _alertTimer?.cancel();
     super.dispose();
   }
 
@@ -52,7 +50,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _rainAlert = prefs.getBool('rainAlert') ?? true;
       _snowAlert = prefs.getBool('snowAlert') ?? true;
       _tempAlert = prefs.getBool('tempAlert') ?? true;
-      _thunderstormAlert = prefs.getBool('thunderstormAlert') ?? true; // Load thunderstorm alert preference
+      _thunderstormAlert = prefs.getBool('thunderstormAlert') ?? true;
       _notificationsEnabled = prefs.getBool('notificationsEnabled') ?? true;
     });
     themeNotifier.value = _darkTheme ? ThemeMode.dark : ThemeMode.light;
@@ -190,7 +188,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           setState(() => _tempAlert = val);
           _updateAlertPref('tempAlert', val);
         }, textColor),
-        _buildSwitch("Thunderstorm", _thunderstormAlert, (val) {  // Add Thunderstorm alert toggle
+        _buildSwitch("Thunderstorm", _thunderstormAlert, (val) {
           setState(() => _thunderstormAlert = val);
           _updateAlertPref('thunderstormAlert', val);
         }, textColor),
